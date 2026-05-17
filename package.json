@@ -18,6 +18,9 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
     "autoprefixer": "latest",
     "postcss": "latest",
     "tailwindcss": "latest",
