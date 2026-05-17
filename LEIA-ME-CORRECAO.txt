@@ -1,0 +1,22 @@
+CORREÇÃO DA PÁGINA INICIAL — SITE NICOLE
+
+Substitua estes arquivos na raiz do projeto:
+
+1) app/page.tsx
+   - substitui a primeira página pública.
+   - remove a imagem de mockup com várias telas.
+   - passa a mostrar apenas a página de exibição correta para o convidado.
+
+2) public/assets/nicole/hero-nicole-confirmacao.png
+   - imagem exata usada na página inicial.
+
+Depois:
+- Commit
+- Push origin
+- Redeploy na Vercel
+
+A página de admin continuará em:
+/admin
+
+A página do formulário continua em:
+/confirmar
