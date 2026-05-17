@@ -1,0 +1,13 @@
+create extension if not exists "pgcrypto";
+create table if not exists public.confirmations (id uuid primary key default gen_random_uuid(),created_at timestamptz not null default now(),responsavel_nome text not null,responsavel_telefone text not null,observacoes text,quantidade_convidados integer not null default 0);
+create table if not exists public.guests (id uuid primary key default gen_random_uuid(),created_at timestamptz not null default now(),confirmation_id uuid not null references public.confirmations(id) on delete cascade,nome text not null,idade integer not null default 0,menor_seis boolean not null default false);
+alter table public.confirmations enable row level security;
+alter table public.guests enable row level security;
+drop policy if exists "allow insert confirmations" on public.confirmations;
+create policy "allow insert confirmations" on public.confirmations for insert to anon, authenticated with check (true);
+drop policy if exists "allow read confirmations" on public.confirmations;
+create policy "allow read confirmations" on public.confirmations for select to anon, authenticated using (true);
+drop policy if exists "allow insert guests" on public.guests;
+create policy "allow insert guests" on public.guests for insert to anon, authenticated with check (true);
+drop policy if exists "allow read guests" on public.guests;
+create policy "allow read guests" on public.guests for select to anon, authenticated using (true);
