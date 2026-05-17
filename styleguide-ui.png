@@ -1,0 +1,89 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { Guest } from '@/lib/types';
+
+export function ConfirmationForm() {
+  const [responsavel, setResponsavel] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [observacoes, setObservacoes] = useState('');
+  const [guests, setGuests] = useState<Guest[]>([{ nome: '', idade: '', menor_seis: false }]);
+  const [status, setStatus] = useState<'idle'|'sending'|'done'|'error'>('idle');
+
+  const menores = useMemo(() => guests.filter(g => Number(g.idade) < 6 && g.idade !== '').length, [guests]);
+
+  function updateGuest(index: number, field: keyof Guest, value: string | boolean) {
+    setGuests(current => current.map((g, i) => {
+      if (i !== index) return g;
+      const next = { ...g, [field]: value } as Guest;
+      if (field === 'idade') next.menor_seis = value !== '' && Number(value) < 6;
+      return next;
+    }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus('sending');
+    const cleanGuests = guests.filter(g => g.nome.trim());
+    try {
+      if (!supabase) throw new Error('Supabase não configurado');
+      const { data, error } = await supabase.from('confirmations').insert({
+        responsavel_nome: responsavel,
+        responsavel_telefone: telefone,
+        observacoes,
+        quantidade_convidados: cleanGuests.length
+      }).select('id').single();
+      if (error) throw error;
+      const payload = cleanGuests.map(g => ({
+        confirmation_id: data.id,
+        nome: g.nome,
+        idade: Number(g.idade || 0),
+        menor_seis: Number(g.idade || 0) < 6
+      }));
+      if (payload.length) {
+        const { error: guestError } = await supabase.from('guests').insert(payload);
+        if (guestError) throw guestError;
+      }
+      window.location.href = '/confirmado';
+    } catch (err) {
+      console.error(err);
+      setStatus('error');
+    }
+  }
+
+  return (
+    <form id="confirmar" onSubmit={handleSubmit} className="rounded-[2rem] bg-white/90 p-6 shadow-soft ring-1 ring-white/70 md:p-8">
+      <p className="text-sm font-black uppercase tracking-[.28em] text-nicolePink">Check-in online</p>
+      <h2 className="mt-2 text-3xl font-black text-nicoleBlue md:text-4xl">Confirme sua presença</h2>
+      <p className="mt-2 text-nicoleBlue/70">Informe o responsável e todos os convidados que irão participar da festa.</p>
+
+      <div className="mt-7 grid gap-4 md:grid-cols-2">
+        <label className="block"><span className="font-bold">Nome completo do responsável</span><input required value={responsavel} onChange={e=>setResponsavel(e.target.value)} className="mt-2 w-full rounded-2xl border border-nicoleRose bg-white px-4 py-3 outline-none focus:ring-4 focus:ring-nicoleRose" /></label>
+        <label className="block"><span className="font-bold">WhatsApp</span><input required value={telefone} onChange={e=>setTelefone(e.target.value)} className="mt-2 w-full rounded-2xl border border-nicoleRose bg-white px-4 py-3 outline-none focus:ring-4 focus:ring-nicoleRose" /></label>
+      </div>
+
+      <div className="mt-7 rounded-3xl bg-nicoleCream p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-xl font-black">Convidados</h3>
+          <button type="button" onClick={() => setGuests([...guests, { nome: '', idade: '', menor_seis: false }])} className="rounded-full bg-nicoleBlue px-4 py-2 text-sm font-black text-white">+ Adicionar</button>
+        </div>
+        <div className="mt-4 space-y-3">
+          {guests.map((guest, index) => (
+            <div key={index} className="grid gap-3 rounded-2xl bg-white p-3 md:grid-cols-[1fr_110px_120px]">
+              <input placeholder="Nome completo" value={guest.nome} onChange={e=>updateGuest(index,'nome',e.target.value)} className="rounded-xl border border-nicoleRose px-3 py-2 outline-none" />
+              <input placeholder="Idade" type="number" min="0" value={guest.idade} onChange={e=>updateGuest(index,'idade',e.target.value)} className="rounded-xl border border-nicoleRose px-3 py-2 outline-none" />
+              <div className="flex items-center justify-center rounded-xl bg-nicoleRose/60 px-3 text-sm font-bold text-nicoleBlue">{guest.menor_seis ? 'Menor de 6' : '6 anos ou +'}</div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-sm font-bold text-nicolePink">Menores de 6 anos identificados: {menores}</p>
+      </div>
+
+      <label className="mt-5 block"><span className="font-bold">Observações</span><textarea value={observacoes} onChange={e=>setObservacoes(e.target.value)} placeholder="Alergias, necessidades especiais ou recado para a Nicole" className="mt-2 min-h-28 w-full rounded-2xl border border-nicoleRose px-4 py-3 outline-none focus:ring-4 focus:ring-nicoleRose" /></label>
+
+      <button disabled={status==='sending'} className="mt-7 w-full rounded-full bg-nicolePink px-6 py-4 text-lg font-black text-white shadow-soft transition hover:scale-[1.01] disabled:opacity-60">{status==='sending' ? 'Enviando...' : 'Enviar confirmação'}</button>
+      {status === 'error' && <p className="mt-3 rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">Não foi possível enviar. Confira as variáveis do Supabase ou tente novamente.</p>}
+    </form>
+  );
+}
