@@ -1,1 +1,1 @@
-Substitua os arquivos do projeto pelos novos arquivos deste ZIP.
+Substitua app/page.tsx e app/confirmar/page.tsx pelos arquivos deste ZIP. Eles corrigem o erro dos placeholders e restauram código TSX válido.
