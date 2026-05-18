@@ -1,16 +1,18 @@
-SUBSTITUIR NO GITHUB:
-- app/confirmar/page.tsx
-- app/admin/page.tsx
-- adicionar app/api/send-confirmation-email/route.ts
 
-EXECUTAR NO SUPABASE:
-- supabase/ALTERACOES-EMAIL-ADMIN.sql
+INSTRUÇÕES
 
-VERCEL ENVIRONMENT VARIABLES:
-- BREVO_API_KEY = sua chave Brevo completa, começa com xkeysib-
-- BREVO_SENDER_EMAIL = contato@resumindoviagens.com.br ou outro remetente validado no Brevo
-- BREVO_SENDER_NAME = Aniversário da Nicole
-- NEXT_PUBLIC_SITE_URL = https://nicole.resumindoviagens.com.br
+1. Substituir:
+app/api/send-confirmation-email/route.ts
 
-DEPOIS:
-Commit, push e redeploy.
+2. A lógica nova deve:
+- buscar total geral no Supabase
+- somar convidados da confirmação recém recebida
+- enviar email interno separado do email do convidado
+
+3. Vercel:
+não precisa criar novas variáveis
+
+4. Depois:
+- commit
+- push
+- redeploy
