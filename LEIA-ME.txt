@@ -1,1 +1,16 @@
-Substitua app/page.tsx e app/confirmar/page.tsx pelos arquivos deste ZIP. Eles corrigem o erro dos placeholders e restauram código TSX válido.
+SUBSTITUIR NO GITHUB:
+- app/confirmar/page.tsx
+- app/admin/page.tsx
+- adicionar app/api/send-confirmation-email/route.ts
+
+EXECUTAR NO SUPABASE:
+- supabase/ALTERACOES-EMAIL-ADMIN.sql
+
+VERCEL ENVIRONMENT VARIABLES:
+- BREVO_API_KEY = sua chave Brevo completa, começa com xkeysib-
+- BREVO_SENDER_EMAIL = contato@resumindoviagens.com.br ou outro remetente validado no Brevo
+- BREVO_SENDER_NAME = Aniversário da Nicole
+- NEXT_PUBLIC_SITE_URL = https://nicole.resumindoviagens.com.br
+
+DEPOIS:
+Commit, push e redeploy.
