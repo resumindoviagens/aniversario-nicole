@@ -1,0 +1,1 @@
+alter table confirmations add column if not exists responsavel_email text;
