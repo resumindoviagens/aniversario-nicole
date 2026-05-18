@@ -1,18 +1,22 @@
+CORREÇÃO DO BUILD — route.ts não era módulo
 
-INSTRUÇÕES
+Erro corrigido:
+File '/vercel/path0/app/api/send-confirmation-email/route.ts' is not a module.
 
-1. Substituir:
+Substitua:
 app/api/send-confirmation-email/route.ts
 
-2. A lógica nova deve:
-- buscar total geral no Supabase
-- somar convidados da confirmação recém recebida
-- enviar email interno separado do email do convidado
+Depois:
+1. Commit
+2. Push origin
+3. Redeploy na Vercel
 
-3. Vercel:
-não precisa criar novas variáveis
+Observações:
+- O email do convidado continua bonito, com mapa e Google Calendar.
+- O email interno é separado, sem agenda e sem detalhes excessivos da festa.
+- O email interno mostra total geral de convidados até o momento.
+- A variável INTERNAL_NOTIFY_EMAILS pode continuar assim:
+  contato@resumindoviagens.com.br,tatideabreu@hotmail.com,contato@resumindoviagens.com.br
 
-4. Depois:
-- commit
-- push
-- redeploy
+Importante:
+O sistema remove duplicidade ao enviar para evitar erro do Brevo se o mesmo email aparecer duas vezes.
