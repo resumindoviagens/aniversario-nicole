@@ -1,34 +1,23 @@
+ATUALIZAÇÃO FINAL ANTES DE USO REAL
 
-ATUALIZAÇÃO — ADMIN LISTA DE FESTA + EMAIL INTERNO
+1) Zerar banco de testes no Supabase:
+Execute:
+supabase/ZERAR-BANCO-TESTES.sql
 
-Substituir no projeto:
-- app/admin/page.tsx
-- app/api/send-confirmation-email/route.ts
+Isso apaga:
+- guests
+- confirmations
 
-Executar no Supabase:
-- supabase/ALTERACOES-ADMIN-LISTA-FESTA.sql
+2) Aumentar botão de envio:
+Substitua:
+app/confirmar/page.tsx
 
-Na Vercel, conferir/adicionar Environment Variables:
-
-BREVO_API_KEY
-Chave completa do Brevo, começa com xkeysib-
-
-BREVO_SENDER_EMAIL
-contato@resumindoviagens.com.br
-
-BREVO_SENDER_NAME
-Aniversário da Nicole
-
-NEXT_PUBLIC_SITE_URL
-https://nicole.resumindoviagens.com.br
-
-INTERNAL_NOTIFY_EMAILS
-contato@resumindoviagens.com.br,tatideabreu@hotmail.com,contato@resumindoviagens.com.br
-
-Observação:
-O email contato@resumindoviagens.com.br foi informado duas vezes. O sistema aceita a lista como foi pedida. Se quiser trocar o terceiro por outro email, basta alterar o valor da variável INTERNAL_NOTIFY_EMAILS na Vercel.
+Melhoria:
+- botão muito maior no desktop
+- botão maior e fixo no rodapé do celular enquanto preenche
+- área clicável bem mais evidente
 
 Depois:
-1. Commit
-2. Push origin
-3. Redeploy na Vercel
+- commit
+- push origin
+- redeploy Vercel
