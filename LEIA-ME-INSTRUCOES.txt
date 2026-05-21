@@ -4,18 +4,12 @@ Substituir:
 app/admin/page.tsx
 
 Mudanças:
-- Admin passa a aparecer como tabela estilo relatório.
-- Removida coluna “Mensagem” da visualização principal do admin.
-- No lugar, coluna “Ações” com botões:
-  WhatsApp
-  Copiar
-  Excluir
-- Visual mais próximo do relatório PDF:
-  cabeçalho azul/rosa
-  tabela com linhas alternadas
-  letras maiores
-  página mais centralizada
-  colunas claras
+- Admin agora é uma tabela única, igual ao aspecto do relatório.
+- Removida a coluna “Mensagem” do admin.
+- Colunas novas: WhatsApp, Copiar e Excluir.
+- Botão Excluir fica ao lado de cada convidado, em coluna própria.
+- CSS interno no próprio arquivo para evitar falha de Tailwind/classes.
+- Página mais centralizada e visualmente consistente.
 
 Depois:
 1. Commit

@@ -22,6 +22,11 @@ type Confirmation = {
   guests?: Guest[];
 };
 
+type TableRow = {
+  guest: Guest;
+  confirmation: Confirmation;
+};
+
 function onlyNumbers(value: string) {
   return (value || "").replace(/\D/g, "");
 }
@@ -69,15 +74,11 @@ function buildPlainWhatsappMessage(item: Confirmation) {
   return decodeURIComponent(buildWhatsappMessage(item).replaceAll("%0A", "\n"));
 }
 
-function buildRows(items: Confirmation[]) {
+function buildRows(items: Confirmation[]): TableRow[] {
   return items.flatMap((item) =>
     (item.guests || []).map((guest) => ({
-      nomeConvidado: guest.nome,
-      responsavel: item.responsavel_nome,
-      menorSeis: guest.menor_seis ? "Sim" : "Não",
-      telefone: item.responsavel_telefone || "",
-      email: item.responsavel_email || "",
-      mensagem: buildPlainWhatsappMessage(item),
+      guest,
+      confirmation: item,
     }))
   );
 }
@@ -96,8 +97,11 @@ export default function AdminPage() {
       .select("*, guests(id, nome, idade, menor_seis)")
       .order("created_at", { ascending: false });
 
-    if (error) alert("Erro ao carregar lista: " + error.message);
-    else setItems((data || []) as Confirmation[]);
+    if (error) {
+      alert("Erro ao carregar lista: " + error.message);
+    } else {
+      setItems((data || []) as Confirmation[]);
+    }
 
     setLoading(false);
   }
@@ -147,20 +151,23 @@ export default function AdminPage() {
 
   function openGuestReport() {
     const rows = buildRows(items);
+
     const tableRows = rows
-      .map(
-        (row, index) => `
+      .map((row, index) => {
+        const item = row.confirmation;
+        const guest = row.guest;
+        return `
           <tr>
             <td>${index + 1}</td>
-            <td>${escapeHtml(row.nomeConvidado)}</td>
-            <td>${escapeHtml(row.responsavel)}</td>
-            <td>${escapeHtml(row.menorSeis)}</td>
-            <td>${escapeHtml(row.telefone)}</td>
-            <td>${escapeHtml(row.email)}</td>
-            <td class="message">${escapeHtml(row.mensagem)}</td>
+            <td>${escapeHtml(guest.nome)}</td>
+            <td>${escapeHtml(item.responsavel_nome)}</td>
+            <td>${guest.menor_seis ? "Sim" : "Não"}</td>
+            <td>${escapeHtml(item.responsavel_telefone || "")}</td>
+            <td>${escapeHtml(item.responsavel_email || "")}</td>
+            <td class="message">${escapeHtml(buildPlainWhatsappMessage(item))}</td>
           </tr>
-        `
-      )
+        `;
+      })
       .join("");
 
     const html = `
@@ -297,151 +304,509 @@ export default function AdminPage() {
     });
   }, [items, search]);
 
+  const rows = useMemo(() => buildRows(filteredItems), [filteredItems]);
+
   const totals = useMemo(() => {
     const allGuests = items.flatMap((item) => item.guests || []);
-    const adultos = allGuests.filter((g) => g.idade >= 18).length;
-    const menoresDe6 = allGuests.filter((g) => g.menor_seis).length;
-    const criancas = allGuests.filter((g) => g.idade < 18).length;
-    return { confirmacoes: items.length, convidados: allGuests.length, adultos, criancas, menoresDe6 };
+    return {
+      familias: items.length,
+      convidados: allGuests.length,
+      adultos: allGuests.filter((g) => g.idade >= 18).length,
+      criancas: allGuests.filter((g) => g.idade < 18).length,
+      menores: allGuests.filter((g) => g.menor_seis).length,
+    };
   }, [items]);
 
   if (!allowed) {
     return (
-      <main className="min-h-screen bg-[#fff7fb] px-4 py-12">
-        <section className="mx-auto max-w-md rounded-[32px] bg-white p-8 shadow-2xl">
-          <p className="mb-2 font-black tracking-widest text-pink-600">NONO AIRLINES</p>
-          <h1 className="mb-6 text-3xl font-black text-[#0d1b4c]">Painel administrativo</h1>
+      <main className="admin-root">
+        <style jsx global>{`
+          html, body { margin: 0; padding: 0; }
+          body { background: #f6f7fb !important; }
+        `}</style>
+
+        <section className="login-card">
+          <div className="login-header">
+            <p>LISTA DE FESTA</p>
+            <h1>Painel administrativo</h1>
+          </div>
+
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Senha do admin"
-            className="mb-4 h-16 w-full rounded-2xl border-2 border-pink-100 px-5 text-xl outline-none focus:border-pink-600"
+            className="login-input"
           />
-          <button onClick={login} className="w-full rounded-2xl bg-pink-600 px-6 py-5 text-xl font-black text-white shadow-lg">
+
+          <button onClick={login} className="login-button">
             Entrar
           </button>
         </section>
+
+        <style jsx>{`
+          .admin-root {
+            min-height: 100vh;
+            background: #f6f7fb;
+            padding: 48px 16px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #0d1b4c;
+          }
+          .login-card {
+            max-width: 460px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 14px 36px rgba(13, 27, 76, 0.12);
+          }
+          .login-header {
+            border-bottom: 4px solid #e91e63;
+            padding-bottom: 16px;
+            margin-bottom: 22px;
+          }
+          .login-header p {
+            margin: 0 0 6px;
+            color: #e91e63;
+            font-weight: 900;
+            letter-spacing: 2px;
+          }
+          .login-header h1 {
+            margin: 0;
+            font-size: 30px;
+            line-height: 1.2;
+            color: #0d1b4c;
+          }
+          .login-input {
+            width: 100%;
+            height: 58px;
+            border-radius: 14px;
+            border: 2px solid #d7dbe8;
+            padding: 0 18px;
+            font-size: 19px;
+            outline: none;
+          }
+          .login-input:focus { border-color: #e91e63; }
+          .login-button {
+            width: 100%;
+            margin-top: 16px;
+            border: 0;
+            background: #e91e63;
+            color: #fff;
+            border-radius: 14px;
+            padding: 17px 22px;
+            font-size: 19px;
+            font-weight: 900;
+            cursor: pointer;
+          }
+        `}</style>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#fff7fb] px-4 py-8">
-      <section className="mx-auto max-w-6xl">
-        <div className="mb-8 rounded-[36px] bg-white p-7 shadow-xl sm:p-9">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-base font-black tracking-widest text-pink-600">LISTA DE FESTA</p>
-              <h1 className="text-4xl font-black leading-tight text-[#0d1b4c] sm:text-5xl">Aniversário da Nicole</h1>
-              <p className="mt-3 max-w-3xl text-lg font-bold leading-relaxed text-[#0d1b4c]/75">
-                Controle de confirmações, convidados, mensagens WhatsApp e relatório de impressão.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-              <button onClick={load} className="rounded-2xl bg-[#0d1b4c] px-6 py-4 text-lg font-black text-white shadow-lg">
-                Atualizar lista
-              </button>
-              <button onClick={openGuestReport} className="rounded-2xl bg-pink-600 px-6 py-4 text-lg font-black text-white shadow-lg">
-                Gerar lista para impressão/PDF
-              </button>
-            </div>
+    <main className="admin-page">
+      <style jsx global>{`
+        html, body { margin: 0; padding: 0; }
+        body { background: #f6f7fb !important; }
+      `}</style>
+
+      <section className="admin-shell">
+        <header className="admin-header">
+          <div>
+            <h1>Lista de Convidados Aniversário Nicole</h1>
+            <div className="subtitle">dia 07/06/2026 às 17 horas</div>
+            <div className="description">Controle de confirmações, convidados, WhatsApp e relatório para impressão/PDF.</div>
           </div>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por responsável, telefone, email ou convidado..."
-            className="mt-7 h-16 w-full rounded-2xl border-2 border-pink-100 px-5 text-xl outline-none focus:border-pink-600"
-          />
+
+          <div className="header-actions">
+            <button onClick={load} className="btn dark">Atualizar lista</button>
+            <button onClick={openGuestReport} className="btn pink">Gerar relatório/PDF</button>
+          </div>
+        </header>
+
+        <div className="summary-grid">
+          <div><span>Famílias</span><strong>{totals.familias}</strong></div>
+          <div><span>Convidados</span><strong>{totals.convidados}</strong></div>
+          <div><span>Adultos</span><strong>{totals.adultos}</strong></div>
+          <div><span>Crianças</span><strong>{totals.criancas}</strong></div>
+          <div><span>Abaixo de 6</span><strong>{totals.menores}</strong></div>
         </div>
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="rounded-[28px] bg-white p-6 shadow-lg"><p className="text-lg font-black text-[#0d1b4c]/65">Famílias</p><strong className="text-5xl text-[#0d1b4c]">{totals.confirmacoes}</strong></div>
-          <div className="rounded-[28px] bg-white p-6 shadow-lg"><p className="text-lg font-black text-[#0d1b4c]/65">Convidados</p><strong className="text-5xl text-[#0d1b4c]">{totals.convidados}</strong></div>
-          <div className="rounded-[28px] bg-white p-6 shadow-lg"><p className="text-lg font-black text-[#0d1b4c]/65">Adultos</p><strong className="text-5xl text-[#0d1b4c]">{totals.adultos}</strong></div>
-          <div className="rounded-[28px] bg-white p-6 shadow-lg"><p className="text-lg font-black text-[#0d1b4c]/65">Crianças</p><strong className="text-5xl text-[#0d1b4c]">{totals.criancas}</strong></div>
-          <div className="rounded-[28px] bg-white p-6 shadow-lg"><p className="text-lg font-black text-[#0d1b4c]/65">Abaixo de 6</p><strong className="text-5xl text-[#0d1b4c]">{totals.menoresDe6}</strong></div>
-        </div>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por responsável, telefone, email ou convidado..."
+          className="search-input"
+        />
 
         {loading ? (
-          <div className="rounded-[28px] bg-white p-8 text-center text-2xl font-black text-[#0d1b4c] shadow-lg">Carregando lista...</div>
+          <div className="loading-box">Carregando lista...</div>
         ) : (
-          <div className="space-y-7">
-            {filteredItems.map((item) => {
-              const phone = onlyNumbers(item.responsavel_telefone);
-              const waPhone = phone.startsWith("55") ? phone : `55${phone}`;
-              const waHref = `https://wa.me/${waPhone}?text=${buildWhatsappMessage(item)}`;
+          <div className="table-card">
+            <div className="table-scroll">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th className="number-col">#</th>
+                    <th>Nome do convidado</th>
+                    <th>Responsável pelo cadastro</th>
+                    <th className="small-col">Menor de 6?</th>
+                    <th>Telefone</th>
+                    <th>Email</th>
+                    <th className="action-col">WhatsApp</th>
+                    <th className="action-col">Copiar</th>
+                    <th className="action-col">Excluir</th>
+                  </tr>
+                </thead>
 
-              return (
-                <article key={item.id} className="overflow-hidden rounded-[34px] bg-white shadow-xl">
-                  <div className="border-b border-pink-100 bg-gradient-to-r from-pink-50 to-white p-7">
-                    <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr_auto] lg:items-start">
-                      <div>
-                        <p className="text-base font-black uppercase tracking-[0.2em] text-pink-600">Responsável</p>
-                        <h2 className="mt-2 text-3xl font-black leading-tight text-[#0d1b4c]">{item.responsavel_nome}</h2>
-                        <p className="mt-3 text-lg font-bold text-[#0d1b4c]/80">WhatsApp: {item.responsavel_telefone}</p>
-                        {item.responsavel_email && <p className="text-lg font-bold text-[#0d1b4c]/80">E-mail: {item.responsavel_email}</p>}
-                        <p className="mt-3 text-base font-bold text-[#0d1b4c]/60">Confirmado em: {formatDate(item.created_at)}</p>
-                      </div>
+                <tbody>
+                  {rows.map((row, index) => {
+                    const item = row.confirmation;
+                    const guest = row.guest;
+                    const phone = onlyNumbers(item.responsavel_telefone);
+                    const waPhone = phone.startsWith("55") ? phone : `55${phone}`;
+                    const waHref = `https://wa.me/${waPhone}?text=${buildWhatsappMessage(item)}`;
 
-                      <textarea
-                        readOnly
-                        value={buildPlainWhatsappMessage(item)}
-                        className="h-40 w-full rounded-2xl border-2 border-pink-100 bg-white p-4 text-base font-semibold leading-relaxed text-[#0d1b4c] outline-none"
-                      />
-
-                      <div className="flex flex-col gap-3">
-                        <a href={waHref} target="_blank" rel="noreferrer" className="rounded-2xl bg-green-600 px-6 py-4 text-center text-lg font-black text-white shadow">
-                          Abrir WhatsApp
-                        </a>
-                        <button onClick={() => copyWhatsapp(item)} className="rounded-2xl bg-[#0d1b4c] px-6 py-4 text-lg font-black text-white shadow">
-                          Copiar texto
-                        </button>
-                      </div>
-                    </div>
-
-                    {item.observacoes && (
-                      <div className="mt-5 rounded-2xl bg-white p-5 text-lg font-bold text-[#0d1b4c]">Observações: {item.observacoes}</div>
-                    )}
-                  </div>
-
-                  <div className="p-7">
-                    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <h3 className="text-2xl font-black text-[#0d1b4c]">Convidados desta confirmação</h3>
-                      <span className="w-fit rounded-full bg-pink-100 px-5 py-2 text-base font-black text-pink-700">
-                        {(item.guests || []).length} pessoa(s)
-                      </span>
-                    </div>
-
-                    <div className="space-y-4">
-                      {(item.guests || []).map((guest) => (
-                        <div key={guest.id} className="grid gap-4 rounded-2xl border border-pink-100 bg-[#fffafd] p-5 md:grid-cols-[1fr_230px_140px] md:items-center">
-                          <div>
-                            <p className="text-2xl font-black text-[#0d1b4c]">{guest.nome}</p>
-                            <p className="text-lg font-bold text-[#0d1b4c]/65">{guestLabel(guest)}</p>
-                          </div>
-                          <div className="rounded-full bg-white px-4 py-3 text-center text-base font-black text-[#0d1b4c] shadow-sm">
-                            {guest.menor_seis ? "abaixo de 6 anos" : guest.idade >= 18 ? "adulto" : "criança"}
-                          </div>
-                          <button onClick={() => deleteGuest(item, guest)} className="rounded-2xl border-2 border-red-200 bg-white px-5 py-4 text-lg font-black text-red-600">
+                    return (
+                      <tr key={guest.id}>
+                        <td className="number-col">{index + 1}</td>
+                        <td className="guest-name">
+                          {guest.nome}
+                          <div className="guest-type">{guestLabel(guest)}</div>
+                        </td>
+                        <td>
+                          <strong>{item.responsavel_nome}</strong>
+                          <div className="date-line">{formatDate(item.created_at)}</div>
+                        </td>
+                        <td className="small-col">
+                          <span className={guest.menor_seis ? "pill yes" : "pill no"}>
+                            {guest.menor_seis ? "Sim" : "Não"}
+                          </span>
+                        </td>
+                        <td>{item.responsavel_telefone || "-"}</td>
+                        <td>{item.responsavel_email || "-"}</td>
+                        <td className="action-col">
+                          <a href={waHref} target="_blank" rel="noreferrer" className="mini-btn green">
+                            WhatsApp
+                          </a>
+                        </td>
+                        <td className="action-col">
+                          <button onClick={() => copyWhatsapp(item)} className="mini-btn dark">
+                            Copiar
+                          </button>
+                        </td>
+                        <td className="action-col">
+                          <button onClick={() => deleteGuest(item, guest)} className="mini-btn danger">
                             Excluir
                           </button>
-                        </div>
-                      ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
 
-                      {(!item.guests || item.guests.length === 0) && (
-                        <div className="rounded-2xl border border-pink-100 bg-[#fffafd] p-6 text-center text-xl font-black text-[#0d1b4c]/60">
-                          Nenhum convidado vinculado a esta confirmação.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+                  {rows.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="empty-cell">
+                        Nenhum convidado encontrado.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
+
+      <style jsx>{`
+        .admin-page {
+          min-height: 100vh;
+          background: #f6f7fb;
+          color: #0d1b4c;
+          font-family: Arial, Helvetica, sans-serif;
+          padding: 28px 16px 48px;
+        }
+
+        .admin-shell {
+          width: min(100%, 1560px);
+          margin: 0 auto;
+        }
+
+        .admin-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 24px;
+          background: #fff;
+          border-radius: 22px;
+          padding: 24px;
+          box-shadow: 0 14px 36px rgba(13, 27, 76, 0.12);
+          border-bottom: 5px solid #e91e63;
+        }
+
+        .admin-header h1 {
+          margin: 0;
+          font-size: 31px;
+          line-height: 1.22;
+          color: #0d1b4c;
+          font-weight: 900;
+        }
+
+        .subtitle {
+          margin-top: 8px;
+          color: #e91e63;
+          font-size: 20px;
+          font-weight: 900;
+        }
+
+        .description {
+          margin-top: 8px;
+          color: #334155;
+          font-size: 17px;
+          font-weight: 700;
+        }
+
+        .header-actions {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
+        .btn {
+          border: 0;
+          color: #fff;
+          border-radius: 14px;
+          padding: 14px 18px;
+          font-size: 16px;
+          font-weight: 900;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .btn.dark { background: #0d1b4c; }
+        .btn.pink { background: #e91e63; }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 14px;
+          margin: 18px 0;
+        }
+
+        .summary-grid div {
+          background: #fff;
+          border-radius: 18px;
+          padding: 16px;
+          box-shadow: 0 10px 26px rgba(13, 27, 76, 0.08);
+        }
+
+        .summary-grid span {
+          display: block;
+          color: #64748b;
+          font-size: 15px;
+          font-weight: 900;
+        }
+
+        .summary-grid strong {
+          display: block;
+          margin-top: 5px;
+          font-size: 36px;
+          color: #0d1b4c;
+          line-height: 1;
+        }
+
+        .search-input {
+          width: 100%;
+          height: 58px;
+          border-radius: 16px;
+          border: 2px solid #d7dbe8;
+          padding: 0 18px;
+          font-size: 18px;
+          font-weight: 700;
+          outline: none;
+          margin-bottom: 18px;
+          background: #fff;
+          color: #0d1b4c;
+        }
+
+        .search-input:focus { border-color: #e91e63; }
+
+        .loading-box {
+          background: #fff;
+          padding: 26px;
+          border-radius: 18px;
+          text-align: center;
+          font-size: 22px;
+          font-weight: 900;
+          box-shadow: 0 10px 26px rgba(13, 27, 76, 0.08);
+        }
+
+        .table-card {
+          background: #fff;
+          border-radius: 22px;
+          overflow: hidden;
+          box-shadow: 0 14px 36px rgba(13, 27, 76, 0.12);
+        }
+
+        .table-scroll { overflow-x: auto; }
+
+        .admin-table {
+          width: 100%;
+          min-width: 1280px;
+          border-collapse: collapse;
+          table-layout: fixed;
+          font-size: 16px;
+        }
+
+        .admin-table th {
+          background: #0d1b4c;
+          color: #fff;
+          padding: 14px 10px;
+          border: 1px solid #0d1b4c;
+          text-align: left;
+          font-size: 15px;
+          line-height: 1.2;
+          font-weight: 900;
+        }
+
+        .admin-table td {
+          border: 1px solid #d7dbe8;
+          padding: 13px 10px;
+          vertical-align: middle;
+          color: #0d1b4c;
+          font-weight: 700;
+          line-height: 1.25;
+          background: #fff;
+          word-break: break-word;
+        }
+
+        .admin-table tr:nth-child(even) td {
+          background: #fff3f8;
+        }
+
+        .number-col {
+          width: 54px;
+          text-align: center !important;
+        }
+
+        .small-col {
+          width: 118px;
+          text-align: center !important;
+        }
+
+        .action-col {
+          width: 118px;
+          text-align: center !important;
+        }
+
+        .guest-name {
+          font-size: 18px;
+          font-weight: 900 !important;
+        }
+
+        .guest-type {
+          margin-top: 4px;
+          font-size: 13px;
+          font-weight: 800;
+          color: #64748b;
+        }
+
+        .date-line {
+          margin-top: 4px;
+          font-size: 13px;
+          color: #64748b;
+          font-weight: 800;
+        }
+
+        .pill {
+          display: inline-block;
+          min-width: 54px;
+          border-radius: 999px;
+          padding: 7px 10px;
+          font-size: 14px;
+          font-weight: 900;
+        }
+
+        .pill.yes {
+          background: #e91e63;
+          color: #fff;
+        }
+
+        .pill.no {
+          background: #f1f5f9;
+          color: #0d1b4c;
+        }
+
+        .mini-btn {
+          display: inline-flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+          border: 0;
+          border-radius: 12px;
+          padding: 11px 9px;
+          color: #fff;
+          font-size: 14px;
+          font-weight: 900;
+          text-decoration: none;
+          cursor: pointer;
+          line-height: 1;
+        }
+
+        .mini-btn.green { background: #16a34a; }
+        .mini-btn.dark { background: #0d1b4c; }
+        .mini-btn.danger {
+          background: #fff;
+          color: #dc2626;
+          border: 2px solid #fecaca;
+        }
+
+        .empty-cell {
+          padding: 28px !important;
+          text-align: center;
+          font-size: 20px;
+          font-weight: 900 !important;
+          color: #64748b !important;
+        }
+
+        @media (max-width: 900px) {
+          .admin-header {
+            flex-direction: column;
+          }
+
+          .header-actions {
+            width: 100%;
+          }
+
+          .btn {
+            width: 100%;
+          }
+
+          .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 520px) {
+          .admin-page {
+            padding: 18px 10px 34px;
+          }
+
+          .summary-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .admin-header h1 {
+            font-size: 25px;
+          }
+
+          .subtitle {
+            font-size: 17px;
+          }
+        }
+      `}</style>
     </main>
   );
 }
