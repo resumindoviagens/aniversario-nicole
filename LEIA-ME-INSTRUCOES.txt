@@ -1,23 +1,22 @@
-ATUALIZAÇÃO FINAL ANTES DE USO REAL
+ATUALIZAÇÃO ADMIN — RELATÓRIO E VISUAL MAIS LEGÍVEL
 
-1) Zerar banco de testes no Supabase:
-Execute:
-supabase/ZERAR-BANCO-TESTES.sql
+Substituir:
+app/admin/page.tsx
 
-Isso apaga:
-- guests
-- confirmations
-
-2) Aumentar botão de envio:
-Substitua:
-app/confirmar/page.tsx
-
-Melhoria:
-- botão muito maior no desktop
-- botão maior e fixo no rodapé do celular enquanto preenche
-- área clicável bem mais evidente
+Novidades:
+1. Botão “Gerar lista para impressão/PDF”
+2. Abre uma nova aba com relatório em tabela
+3. Título: Lista de Convidados Aniversário Nicole - dia 07/06/2026 às 17 horas
+4. Colunas: nome do convidado, responsável pelo cadastro, menor de 6 anos, telefone, email e mensagem
+5. Letras maiores no admin
+6. Página mais centralizada
+7. Cards com mais destaque e espaçamento
+8. Botão de impressão/salvar em PDF na aba do relatório
 
 Depois:
 - commit
 - push origin
 - redeploy Vercel
+
+Não precisa mexer no Supabase.
+Não precisa mexer na Vercel.
